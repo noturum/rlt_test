@@ -1,3 +1,5 @@
+import asyncio
+
 from DataModel import Text, GroupType
 from dateutil.relativedelta import relativedelta
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -14,7 +16,7 @@ class AsyncClient(AsyncIOMotorClient):
         return self.__db.get_collection('test')
 
     async def get_data(self, data: Text) -> dict:
-        res = {'dataset': [], 'labels': []}
+        res = {"dataset": [], "labels": []}
         match data.group_type:
             case GroupType.hour:
                 incval = timedelta(hours=1)
@@ -27,7 +29,7 @@ class AsyncClient(AsyncIOMotorClient):
         lastdate = data.dt_from
         curdate = lastdate + incval
         while curdate <= data.dt_upto:
-            pipline = [{'$match': {'dt': {'$gte': lastdate, '$lte': curdate}}},
+            pipline = [{'$match': {'dt': {'$gt': lastdate, '$lt': curdate}}},
                        {'$group': {'_id': '1', 'sum': {'$sum': '$value'}}}]
             if agr_list := await self.collection.aggregate(pipline).to_list(1):
                 res['dataset'].append(agr_list[0]['sum'])
@@ -47,3 +49,6 @@ class AsyncClient(AsyncIOMotorClient):
                 res['dataset'].append(0)
             res['labels'].append(lastdate.isoformat())
             return res
+
+
+
